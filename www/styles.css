@@ -1,7 +1,7 @@
 /*h1 Title Text */
 h1 {
-  font-size: 32px;
-  color: #333;
+  font-size: 54px;
+  color: rgb(160, 177, 203);
   font-weight: bold;
   
 }
@@ -34,7 +34,7 @@ p {
   position: relative;
   width: 100%;
   height: 100vh;
-  background-image: url('https://source.unsplash.com/1600x900/?nature,earth');
+  background-image: url('MongolOase-JNoack-110-1200x750.jpg');
   background-size: cover;
   background-position: center;
   display: flex;
@@ -46,7 +46,7 @@ p {
 
 /* Text Box Styling */
 .text-box {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.8);
   padding: 20px;
   border-radius: 10px;
 }
