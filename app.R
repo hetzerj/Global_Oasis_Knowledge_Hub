@@ -8,6 +8,9 @@ ui <- fluidPage(
   navbarPage("Global Oasis Knowledge Hub",
              tabPanel("Home",
                       div(class = "container",
+                          
+                          tags$img(src = "SNG_Logo_transperant.png", class = "logo"),
+                          
                           div(class = "text-box",
                               h1("Global Oasis Knowledge Hub"),
                               h3("A Senckenberg initiative for leveraging knowledge supporting science and policy.")
