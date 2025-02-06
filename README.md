@@ -4,7 +4,7 @@ This is the framework for the **Global Oasis Knowledge Hub**. The initiative aim
 
 ## Project Structure  
 ```
-/Your-Shiny-App-Folder
+/Global_Oasis_Knowledge_Hub
 │— app.R           # Main Shiny application script
 │— www/            # Static assets (CSS, images, etc.)
 │   └— styles.css  # Global stylesheet for UI styling
