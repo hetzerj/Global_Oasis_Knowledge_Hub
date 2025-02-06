@@ -1,0 +1,12 @@
+name: Global_Oasis_Knowledge_Hub
+title: Global_Oasis_Knowledge_Hub
+username: hetzerj
+account: hetzerj
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13925136
+bundleId: 9759543
+url: https://hetzerj.shinyapps.io/Global_Oasis_Knowledge_Hub/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
