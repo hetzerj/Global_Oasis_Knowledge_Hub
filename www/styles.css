@@ -61,6 +61,26 @@ p {
   border-radius: 10px;
 }
 
+.team-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%; 
+  border: 3px solid rgb(160, 177, 203);
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3)
+}
+
+.advisor-img { 
+  width: 150px;
+  height: 150px; 
+  object-fit: cover; 
+  border: 3px solid rgb(160, 177, 203);
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.partner-logo-img {
+  height: 150px;
+  #box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3)
+}
 /* Content Padding */
 .content {
   padding: 20px;
