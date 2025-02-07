@@ -36,14 +36,23 @@ ui <- fluidPage(
              fluidRow(
                column(12, h2("Team", align = "center")),
                
+               # Centered text with proper alignment
+               fluidRow(
+                 column(12, align = "center",
+                        column(6, offset = 3, 
+                               h3("The Global Oasis Knowledge Hub operates as a non-profit initiative by the Senckenberg research institute in Frankfurt with contributions from a global network of oasis experts.", align = "center")
+                        )
+                 )
+               ),
+               
                column(3, align = "center",
-                      img(src = "Jessica_Hetzer.jpeg",  class = "team-img"),
+                      img(src = "Jessica_Hetzer.jpeg", class = "team-img"),
                       p("Jessica Hetzer", style="font-weight: bold"),
                       p("Lead Developer & Concept Creator")
                ),
                
                column(3, align = "center",
-                      img(src = "Aidin_Niamir.jpeg",  class = "team-img"),
+                      img(src = "Aidin_Niamir.jpeg", class = "team-img"),
                       p("Aidin Niamir", style="font-weight: bold"),
                       p("Coordinator & Concept Creator")
                ),
@@ -55,9 +64,9 @@ ui <- fluidPage(
                ),
                
                column(3, align = "center",
-                      img(src = "Empty_profile.png",  class = "team-img"),
+                      img(src = "Empty_profile.png", class = "team-img"),
                       p("Mechthilde Falkenhahn", style="font-weight: bold"),
-                      p("Literature review")
+                      p("Literature Review")
                )
              ),
              
