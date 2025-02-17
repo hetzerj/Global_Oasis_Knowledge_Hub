@@ -21,13 +21,13 @@ h3 {
 
 /*p Running Text */
 p {
-  font-size: 16px;
-  color: #555;
+  font-size: 20px;
+  color: #555
 }
 
 /* Navbar Styling */
 .navbar-default .navbar-nav > li > a {
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* Position the logo in the top-right corner */
@@ -85,3 +85,4 @@ p {
 .content {
   padding: 20px;
 }
+
