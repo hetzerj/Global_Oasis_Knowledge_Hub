@@ -100,14 +100,98 @@ ui <- fluidPage(
     
     
     # tabPanel: Knowledge Hub -------------------------------------------------------    
-    
-    tabPanel("Knowledge Hub", div(
-      class = "content",
-      h2("Knowledge Hub"),
-      p("A collection of valuable resources and insights.")),
-    div(DTOutput("data_table")),
-    ), 
-    
+tabPanel("Knowledge Hub",
+  # div(
+  #   h1("Oasis Knowledge: Discover - Filter - Download ", style="text-align:center")
+  # ),
+  
+  # # Search bar with a background
+  # fluidRow(
+  #   column(8, offset=2,
+  #          div(
+  #            style = "background-color: #333; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
+  #            h3(HTML("<i class='fas fa-search'></i> SEARCH & FILTER"), style="color: white; background-color:grey"),
+  #            fluidRow(
+  #              column(2, div(
+  #                selectInput("global_field", "", 
+  #                            choices = c("Search in all fields", "Title", "Authors", "Year", "Source"),
+  #                            selected = "Search in all fields"))),
+  #              column(2, div(
+  #                div(textInput("global_search", "", placeholder = "Enter search term"))
+  #              ))
+  #            )
+  #          )
+  #   )
+  # ),
+  # 
+  #   # Advanced filtering section
+  # fluidRow(
+  #   column(8,offset=2, 
+  #     div( style = "background-color: grey; padding: 10px; border-radius: 5px; margin-top: -10px; )",
+  #       actionButton("add_filter", "Add more complex filtering"))
+  #   )),
+  # 
+  # fluidRow(
+  #     uiOutput("filter_rows")
+  # ),
+  # Search & Filter Section with Black Background
+  fluidRow(
+    column(8, offset=2,
+           div(
+             style = "background-color: #333; padding: 15px; border-radius: 5px; margin-bottom: 10px;",
+             h3(HTML("<i class='fas fa-search'></i> SEARCH & FILTER"), style="color: white; margin-bottom: 15px;"),
+             fluidRow(
+               column(3, 
+                      selectInput("global_field", "", 
+                                  choices = c("Search in all fields", "Title", "Authors", "Year", "Source"),
+                                  selected = "Search in all fields")
+               ),
+               column(5, 
+                      textInput("global_search", "", placeholder = "Enter search term")
+               )
+             )
+           )
+    )
+  ),
+  
+  # Advanced Filtering Section (Black Background)
+  fluidRow(
+    column(8, offset=2, 
+           div(
+             style = "background-color: #333; padding: 10px; border-radius: 5px; margin-top: -10px;",
+             actionButton("add_filter", "Advanced filter options", 
+                          class = "btn btn-secondary", 
+                          style = "color: black; background-color:rgba(160, 177, 203, 0.9);margin-left: 5px "),
+             fluidRow(
+               uiOutput("filter_rows")
+             ),
+              )
+    )
+  ),
+  
+
+  
+
+  #downlod and visualize
+  fluidRow(style="margin-top:10px",
+           column(3, offset=3,
+                  downloadButton("download_filtered_data", "DOWNLOAD", 
+                                 class = "btn btn-primary", 
+                                 style = "font-size: 22px; padding: 15px 30px; width: 100%;")
+           ),
+           column(3, 
+                  actionButton("visualize_button", label = HTML("<i class='fas fa-eye'></i> VISUALIZE"), 
+                               class = "btn btn-primary", 
+                               style = "font-size: 22px; padding: 15px 30px; width: 100%;")
+           )
+  ),
+
+  # Data table
+  fluidRow(
+    DTOutput("data_table")
+  )
+),
+
     
     
 
@@ -474,49 +558,104 @@ server <- function(input, output) {
     ggplotly(country_plot, tooltip = c("text"))
   })
   
-  #
 
 # Knowledge Hub Table search ----------------------------------------------
 
-  # Reactive expression to filter the table based on the search term
-  filtered_data <- reactive({
-    key_data_df <- data.frame(
+  key_data_df <- reactive({
+    data.frame(
       Authors = expanded_works$nodes$authors_short,
       Year = expanded_works$nodes$publication_year,
       Title = expanded_works$nodes$title,
-      Source = paste0(
-        '<a href="',
-        expanded_works$nodes$url,
-        '" target="_blank">',
-        expanded_works$nodes$url,
-        '</a>'
-      ),
+      Source = paste0('<a href="', expanded_works$nodes$url, '" target="_blank">', expanded_works$nodes$url, '</a>'),
       stringsAsFactors = FALSE
     )
-    
-    # Filter data if a search term is entered
-    if (!is.null(input$search_term) && input$search_term != "") {
-      key_data_df <- key_data_df[grep(input$search_term, key_data_df$Title, ignore.case = TRUE), ]
-    }
-    
-    key_data_df
   })
   
-  # Render the filtered table
+  filter_list <- reactiveVal(list())
+  
+  observeEvent(input$add_filter, {
+    new_filter <- list(
+      id = paste0("filter_", length(filter_list()) + 1),
+      operator = "AND",
+      field = "Search in all fields",
+      term = ""
+    )
+    filter_list(append(filter_list(), list(new_filter)))
+  })
+  
+  output$filter_rows <- renderUI({
+    tagList(
+      lapply(seq_along(filter_list()), function(i) {
+        fluidRow(
+          column(2, offset=1, selectInput(paste0("operator_", i), "", choices = c("AND", "OR", "NOT"), selected = filter_list()[[i]]$operator)),
+          column(3, selectInput(paste0("field_", i), "", 
+                                choices = c("Search in all fields", "Title", "Authors", "Year", "Source"), 
+                                selected = filter_list()[[i]]$field)),
+          column(3, textInput(paste0("term_", i), "", placeholder = "Enter search term"))
+        )
+      })
+    )
+  })
+  
+  filtered_data <- reactive({
+    df <- key_data_df()
+    
+    # Global search
+    if (!is.null(input$global_search) && input$global_search != "") {
+      if (input$global_field == "Search in all fields") {
+        df <- df[apply(df, 1, function(row) any(grepl(input$global_search, row, ignore.case = TRUE))), ]
+      } else {
+        df <- df[grep(input$global_search, df[[input$global_field]], ignore.case = TRUE), ]
+      }
+    }
+    
+    # Process filter rows
+    for (i in seq_along(filter_list())) {
+      operator <- input[[paste0("operator_", i)]]
+      field <- input[[paste0("field_", i)]]
+      term <- input[[paste0("term_", i)]]
+      
+      if (!is.null(term) && term != "") {
+        if (field == "Search in all fields") {
+          match_rows <- apply(df, 1, function(row) any(grepl(term, row, ignore.case = TRUE)))
+        } else {
+          match_rows <- grepl(term, df[[field]], ignore.case = TRUE)
+        }
+        
+        if (operator == "AND") {
+          df <- df[match_rows, ]
+        } else if (operator == "OR") {
+          df <- rbind(df, df[match_rows, ])
+        } else if (operator == "NOT") {
+          df <- df[!match_rows, ]
+        }
+      }
+    }
+    
+    df
+  })
+  
   output$data_table <- renderDT({
     datatable(
       filtered_data(),
       escape = FALSE,
-      # Allows rendering of HTML links in the DOI column
       options = list(
-        pageLength = 10,
-        # Number of rows to display per page
+        pageLength = 20,
         searchHighlight = TRUE,
-        # Highlight search matches
-        dom = 'ftip'  # Simplify table controls (filter, table, info, pagination)
+        dom = 'tip'  # Simplify table controls (filter, table, info, pagination)
       )
     )
-  })  
+  })
+
+  output$download_filtered_data <- downloadHandler(
+    filename = function() {
+      paste("filtered_data_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(filtered_data(), file, row.names = FALSE)
+    }
+  )
+  
   
 
 }
