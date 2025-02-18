@@ -7,14 +7,16 @@ library(rnaturalearthdata)
 library(dplyr)
 library(countrycode)
 library(DT)
+library(networkD3)
 
 ui <- fluidPage(
   # general settings and links to scripts -------------------------------------------------------
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
-  ),
+    ),
   navbarPage(
     "Global Oasis Knowledge Hub",
+    id = "main_tabs",
     
     # tabPanel: Home -------------------------------------------------------
     tabPanel("Home", div(
@@ -101,40 +103,6 @@ ui <- fluidPage(
     
     # tabPanel: Knowledge Hub -------------------------------------------------------    
 tabPanel("Knowledge Hub",
-  # div(
-  #   h1("Oasis Knowledge: Discover - Filter - Download ", style="text-align:center")
-  # ),
-  
-  # # Search bar with a background
-  # fluidRow(
-  #   column(8, offset=2,
-  #          div(
-  #            style = "background-color: #333; padding: 10px; border-radius: 5px; margin-bottom: 10px;",
-  #            h3(HTML("<i class='fas fa-search'></i> SEARCH & FILTER"), style="color: white; background-color:grey"),
-  #            fluidRow(
-  #              column(2, div(
-  #                selectInput("global_field", "", 
-  #                            choices = c("Search in all fields", "Title", "Authors", "Year", "Source"),
-  #                            selected = "Search in all fields"))),
-  #              column(2, div(
-  #                div(textInput("global_search", "", placeholder = "Enter search term"))
-  #              ))
-  #            )
-  #          )
-  #   )
-  # ),
-  # 
-  #   # Advanced filtering section
-  # fluidRow(
-  #   column(8,offset=2, 
-  #     div( style = "background-color: grey; padding: 10px; border-radius: 5px; margin-top: -10px; )",
-  #       actionButton("add_filter", "Add more complex filtering"))
-  #   )),
-  # 
-  # fluidRow(
-  #     uiOutput("filter_rows")
-  # ),
-  # Search & Filter Section with Black Background
   fluidRow(
     column(8, offset=2,
            div(
@@ -169,9 +137,6 @@ tabPanel("Knowledge Hub",
     )
   ),
   
-
-  
-
   #downlod and visualize
   fluidRow(style="margin-top:10px",
            column(3, offset=3,
@@ -179,9 +144,9 @@ tabPanel("Knowledge Hub",
                                  class = "btn btn-primary", 
                                  style = "font-size: 22px; padding: 15px 30px; width: 100%;")
            ),
-           column(3, 
-                  actionButton("visualize_button", label = HTML("<i class='fas fa-eye'></i> VISUALIZE"), 
-                               class = "btn btn-primary", 
+           column(3,
+                  actionButton("go_visualize", label = HTML("<i class='fas fa-eye'></i> Visualize"), 
+                               class = "btn btn-primary",
                                style = "font-size: 22px; padding: 15px 30px; width: 100%;")
            )
   ),
@@ -192,8 +157,31 @@ tabPanel("Knowledge Hub",
   )
 ),
 
-    
-    
+
+    # tabPanel: Visualization ---------------------------------------------------------------------
+tabPanel("Visualization",
+         div(
+           style = "position: relative; width: 100%; height: 100vh;",
+           
+           # Legend fixed on the top-left
+           tags$iframe(
+             src = "legend.html",
+             style = "position: absolute; top: 10px; left: 20px; width: 250px; height: 220px; z-index: 1000; border: 5px solid rgba(160, 177, 203,1); background: white;"
+           ),
+           
+           # Reset Button at the top-right
+           actionButton(
+             "reset_visualize", "Reset to full network",
+             class = "btn btn-secondary",
+             style = "position: absolute; top: 10px; right: 20px; font-size:24px;z-index: 1000; background-color:rgba(160, 177, 203,1)"
+           ),
+           
+           # Visualization UI placeholder
+           uiOutput("visualization_ui")
+         )
+),
+
+
 
     # tabPanel: Credits -------------------------------------------------------
     tabPanel("Credits",
@@ -211,46 +199,46 @@ tabPanel("Knowledge Hub",
                  )
                ),
                
-               column(3, align = "center",
+               fluidRow( style=" margin-top:50px",
+               column(2,offset=2, align = "center",
                       img(src = "Jessica_Hetzer.jpeg", class = "team-img"),
                       p("Jessica Hetzer", style="font-weight: bold"),
                       p("Lead Developer & Concept Creator")
                ),
                
-               column(3, align = "center",
+               column(2, align = "center",
                       img(src = "Aidin_Niamir.jpeg", class = "team-img"),
                       p("Aidin Niamir", style="font-weight: bold"),
                       p("Coordinator & Concept Creator")
                ),
                
-               column(3, align = "center",
+               column(2, align = "center",
                       img(src = "Rainer_Krug.jpeg", class = "team-img"),
                       p("Rainer M. Krug", style="font-weight: bold"),
                       p("Software Developer")
                ),
                
-               column(3, align = "center",
+               column(2, align = "center",
                       img(src = "Empty_profile.png", class = "team-img"),
                       p("Mechthilde Falkenhahn", style="font-weight: bold"),
                       p("Literature Review")
                )
+               )
              ),
-             
-             hr(),
+
              
              # Advisory Board Section
-             # Advisory Board Section
-             fluidRow( style="background-color: rgba(160, 177, 203, 0.3);",
-               column(12, h3("Advisory Members", align = "center")),
+             fluidRow( style="background-color: rgba(160, 177, 203, 0.3); margin-top:100px",
+               column(12, h2("Advisory Members", align = "center")),
                
-               column(12, align = "center",
-                      div(style="display: flex; justify-content: center; gap: 30px;",
-                          column(3, align = "center",
+               column(12, style=" margin-top:50px",align = "center",
+                      div(style="display: flex; justify-content: center;",
+                          column(2, align = "center",
                                  img(src = "Klement_Tockner.jpeg",  class = "advisor-img"),
                                  p("Klement Tockner", style="font-weight: bold")
                           ),
                           
-                          column(3, align = "center",
+                          column(2, align = "center",
                                  img(src = "Jonathan_Jeschke.jpeg", class = "advisor-img"),
                                  p("Jonathan Jeschke", style="font-weight: bold")
                           )
@@ -258,44 +246,34 @@ tabPanel("Knowledge Hub",
                )
              ),
              
-             fluidRow( style="background-color: rgba(160, 177, 203,0.3);gap:10px",
-               column(12, h3("Advisory Board", align = "center")),
+             fluidRow( style="background-color: rgba(160, 177, 203,0.3);",
+              
                
                column(12, align = "center",
                       div(style="display: flex; justify-content: center; gap: 20px;",
-                          column(2, align = "center",
+                          column(2, align = "center", style="margin-top:20px",
                                  img(src = "Empty_profile.png", class = "advisor-img"),
                                  p("Advisor 1", style="font-weight: bold")
                           ),
                           
-                          column(2, align = "center",
+                          column(2, align = "center", style="margin-top:20px",
                                  img(src = "Empty_profile.png", class = "advisor-img"),
                                  p("Advisor 2", style="font-weight: bold")
-                          ),
-                          
-                          column(2, align = "center",
+                          ), 
+                          column(2, align = "center", style="margin-top:20px",
                                  img(src = "Empty_profile.png", class = "advisor-img"),
-                                 p("Advisor 3", style="font-weight: bold")
-                          ),
-                          
-                          column(2, align = "center",
-                                 img(src = "Empty_profile.png", class = "advisor-img"),
-                                 p("Advisor 4", style="font-weight: bold")
-                          ),
-                          
-                          column(2, align = "center",
-                                 img(src = "Empty_profile.png", class = "advisor-img"),
-                                 p("Advisor 5", style="font-weight: bold")
+                                 p("Advisor 2", style="font-weight: bold")
                           )
                       )
                )
              ),
-             hr(),
+
              
              # Partners Section
-             fluidRow(
-               column(12, h2("Partners", align = "center")),
+             fluidRow( 
+               column(12, style="margin-top:50px", h2("Partners", align = "center")),
                
+               fluidRow( style="margin-top:100px",
                column(3, align = "center",
                       img(src = "UNCCD.jpeg", class = "partner-logo-img"),
                       br(),
@@ -318,7 +296,7 @@ tabPanel("Knowledge Hub",
                       img(src = "Empty_partner.png",  class = "partner-logo-img"),
                       br(),
                       a("Visit Partner", href = "https://partner4.com", target="_blank")
-               )
+               ))
              )
     )
     # End of UI -------------------------------------------------------
@@ -327,10 +305,10 @@ tabPanel("Knowledge Hub",
 
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
 
-  # Statistics for ABOUT ------------------------------------------------------
+# Statistics for ABOUT ------------------------------------------------------
 
   output$openAccessPie <- renderPlotly({
     table_open_access<-table(expanded_works$nodes$is_oa)
@@ -452,7 +430,6 @@ server <- function(input, output) {
     top20_journals <- sorted_journals[1:40, ]
     colnames(top20_journals) <- c("PublishedIn", "count")
     
-    # Ensure 'PublishedIn' is a character vector and sorted by 'count'
     top20_journals$PublishedIn <- factor(top20_journals$PublishedIn, levels = top20_journals$PublishedIn)
     
     unique_journals_count <- nrow(table_journals)  # Count unique journals
@@ -475,8 +452,8 @@ server <- function(input, output) {
           list(
             x = 1.0,  # Position at the top right
             y = 1.1,  # Slightly above the plot area
-            text = paste0( "<span style='font-size:24px;'>TOP 40 PUBLISHER</span><br>",
-                          "\nIn total, the Global Oasis Knowlegde Hub provides references from ",unique_journals_count, " unique publisher.", "\nBelow you can find the most frequent ones."),
+            text = paste0( "<span style='font-size:24px;'>PUBLISHER</span><br>",
+                          "\nIn total, the Global Oasis Knowlegde Hub provides references from ",unique_journals_count, " unique publisher.", "\nBelow you can find the 40 most frequent ones."),
             showarrow = FALSE,
             font = list(size = 16, color = "#333"),
             bgcolor = NA,
@@ -563,6 +540,7 @@ server <- function(input, output) {
 
   key_data_df <- reactive({
     data.frame(
+      oa_ID = expanded_works$nodes$id,  
       Authors = expanded_works$nodes$authors_short,
       Year = expanded_works$nodes$publication_year,
       Title = expanded_works$nodes$title,
@@ -600,12 +578,15 @@ server <- function(input, output) {
   filtered_data <- reactive({
     df <- key_data_df()
     
+    # Remove `oa_ID` from filtering/searching by working on a copy without `oa_ID`
+    df_searchable <- df[, !colnames(df) %in% "oa_ID"]
+    
     # Global search
     if (!is.null(input$global_search) && input$global_search != "") {
       if (input$global_field == "Search in all fields") {
-        df <- df[apply(df, 1, function(row) any(grepl(input$global_search, row, ignore.case = TRUE))), ]
+        df_searchable <- df_searchable[apply(df_searchable, 1, function(row) any(grepl(input$global_search, row, ignore.case = TRUE))), ]
       } else {
-        df <- df[grep(input$global_search, df[[input$global_field]], ignore.case = TRUE), ]
+        df_searchable <- df_searchable[grep(input$global_search, df_searchable[[input$global_field]], ignore.case = TRUE), ]
       }
     }
     
@@ -617,47 +598,233 @@ server <- function(input, output) {
       
       if (!is.null(term) && term != "") {
         if (field == "Search in all fields") {
-          match_rows <- apply(df, 1, function(row) any(grepl(term, row, ignore.case = TRUE)))
+          match_rows <- apply(df_searchable, 1, function(row) any(grepl(term, row, ignore.case = TRUE)))
         } else {
-          match_rows <- grepl(term, df[[field]], ignore.case = TRUE)
+          match_rows <- grepl(term, df_searchable[[field]], ignore.case = TRUE)
         }
         
         if (operator == "AND") {
-          df <- df[match_rows, ]
+          df_searchable <- df_searchable[match_rows, ]
         } else if (operator == "OR") {
-          df <- rbind(df, df[match_rows, ])
+          df_searchable <- rbind(df_searchable, df_searchable[match_rows, ])
         } else if (operator == "NOT") {
-          df <- df[!match_rows, ]
+          df_searchable <- df_searchable[!match_rows, ]
         }
       }
     }
     
-    df
+    df[df$Title %in% df_searchable$Title, ]
   })
   
   output$data_table <- renderDT({
     datatable(
-      filtered_data(),
+      filtered_data()[, !colnames(filtered_data()) %in% "oa_ID"],  
       escape = FALSE,
       options = list(
         pageLength = 20,
         searchHighlight = TRUE,
-        dom = 'tip'  # Simplify table controls (filter, table, info, pagination)
+        dom = 'tip'  
       )
     )
   })
-
+  
   output$download_filtered_data <- downloadHandler(
     filename = function() {
       paste("filtered_data_", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(filtered_data(), file, row.names = FALSE)
+      write.csv(filtered_data(), file, row.names = FALSE)  
     }
   )
   
   
 
-}
+
+# Visualization ----------------------------------------------------
+  
+  # Function to generate filtered visualization
+  plot_snowball_interactive <- function(expanded_works, key_works, filtered_ids, 
+                                        file_graph = "www/filtered_snowball.html", 
+                                        file_legend = "www/legend.html") {
+    
+    ## Simple forceNetwork
+    networkData <- data.frame(
+      src = expanded_works$edges$from,
+      target = expanded_works$edges$to,
+      stringsAsFactors = FALSE
+    )
+    
+    nodes <- data.frame(
+      name = expanded_works$nodes$id,
+      author = IPBES.R::abbreviate_authors(expanded_works$nodes),
+      doi = expanded_works$nodes$doi,
+      nodesize = expanded_works$nodes$cited_by_count / (2024 - expanded_works$nodes$publication_year) * 0.5,
+      group = sapply(expanded_works$nodes$topics, function(x) {
+        if ("display_name" %in% colnames(x)) {
+          return(x$display_name[4])
+        } else {
+          return(NA)
+        }
+      }),
+      stringsAsFactors = FALSE
+    )
+    
+    # Ensure group column is valid
+    nodes$group[is.na(nodes$group) | nodes$group == ""] <- "Unknown"
+    
+    nodes <- nodes[nodes$name %in% filtered_ids, ]
+    
+    # If filtered result is empty, generate an **empty** HTML and stop processing
+    if (nrow(nodes) == 0) {
+      writeLines("<html><body></body></html>", file_graph)  # Create an empty page
+      return(list(graph = file_graph, legend = file_legend))
+    }
+    
+    nodes$id <- seq_len(nrow(nodes)) - 1  
+    
+    edges <- networkData %>%
+      filter(src %in% nodes$name & target %in% nodes$name) %>%
+      left_join(nodes, by = c("src" = "name")) %>%
+      select(-src, -author) %>%
+      rename(source = id) %>%
+      left_join(nodes, by = c("target" = "name")) %>%
+      select(-target, -author) %>%
+      rename(target = id) %>%
+      mutate(width = 1)
+    
+    if (nrow(edges) == 0) {
+      # Create a dummy row with self-loop (won't be displayed)
+      edges <- data.frame(source = 0, target = 0, width = 0)
+    }
+    
+    
+    # if (nrow(edges) == 0) {
+    #   writeLines("<html><body></body></html>", file_graph)
+    #   return(list(graph = file_graph, legend = file_legend))
+    # }
+    
+    nodes$oa_id <- nodes$name
+    nodes$name <- nodes$author
+    
+    # Unique groups for coloring
+    unique_groups <- unique(nodes$group)
+    
+    color_palette <- c("#377eb8","#50521A","#794839", "#6a3d9a", "#e31a1c" ,"#333")[1:length(unique_groups)] 
+    
+    # color_palette <- c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
+    #                    "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
+    #                    "#ccebc5", "#ffed6f")[1:length(unique_groups)]
+    # 
+    ColourScale <- sprintf(
+      'd3.scaleOrdinal().domain(["%s"]).range(["%s"]);',
+      paste(unique_groups, collapse = '", "'),
+      paste(color_palette, collapse = '", "')
+    )
+    
+    openDOI <- "window.open(d.doi)"
+    
+    
+    nwg <- forceNetwork(
+      Links = edges,
+      Nodes = nodes,
+      Source = "source",
+      Target = "target",
+      NodeID = "name",
+      Group = "group",
+      Value = "width",
+      opacity = 1,
+      zoom = TRUE,
+      colourScale = JS(ColourScale),
+      fontSize = 20,
+      legend = FALSE,
+      clickAction = openDOI
+    )
+    
+    
+    nwg$x$nodes$doi <- nodes$doi
+    
+    # Save the graph as an HTML file
+    networkD3::saveNetwork(nwg, file = file_graph, selfcontained = TRUE)
+    
+    # Generate legend HTML
+    legend_html <- "<html><body><h3>Scientific Field</h3><ul style='list-style: none;'>"
+    
+    for (i in seq_along(unique_groups)) {
+      legend_html <- paste0(
+        legend_html,
+        "<li style='margin:5px;'><span style='display:inline-block;width:15px;height:15px;background-color:",
+        color_palette[i], ";border: 1px solid black;'></span> ",
+        unique_groups[i], "</li>"
+      )
+    }
+    
+    legend_html <- paste0(legend_html, "</ul></body></html>")
+    
+    writeLines(legend_html, file_legend)
+    
+    # Return file paths
+    list(graph = file_graph, legend = file_legend)
+  } 
+  
+  
+  # Reactive flag to track whether filtered visualization should be displayed
+  show_filtered <- reactiveVal(FALSE)
+  
+  # Default: Show the full snowball visualization
+  output$visualization_ui <- renderUI({
+    if (show_filtered()) {
+      tags$iframe(
+        src = "filtered_snowball.html",
+        style = "border: 5px solid #333; width: 100%; height: 100vh;"
+      )
+    } else {
+      tags$iframe(
+        src = "snowball_full.html",
+        style = "border: 5px solid rgba(160, 177, 203,1); width: 100%; height: 100vh;"
+      )
+    }
+  })
+  
+  # When "Visualize" is clicked, generate filtered visualization and update flag
+  observeEvent(input$go_visualize, {
+    updateTabsetPanel(session, "main_tabs", selected = "Visualization")
+    
+    # Extract filtered node IDs safely 🔧
+    filtered_ids <- if (!is.null(filtered_data()) && nrow(filtered_data()) > 0) {
+      filtered_data()$id
+    } else {
+      NULL
+    }
+    
+    if (!is.null(filtered_ids)) {
+      plot_snowball_interactive(expanded_works, key_works, filtered_ids)
+      
+      # Update reactive flag to show the filtered visualization
+      show_filtered(TRUE)
+      
+      # *Explicitly trigger UI re-render**
+      output$visualization_ui <- renderUI({
+        tags$iframe(
+          src = "filtered_snowball.html",
+          style = "border: 5px solid #333; width: 100%; height: 100vh;"
+        )
+      })
+    } 
+  })
+  
+  # When "Reset Visualization" is clicked, switch back to the full snowball visualization
+  observeEvent(input$reset_visualize, {
+    show_filtered(FALSE)  # Reset to show full visualization
+    
+    # ✅ **Explicitly trigger UI re-render to show full visualization**
+    output$visualization_ui <- renderUI({
+      tags$iframe(
+        src = "snowball_full.html",
+        style = "border: 5px solid rgba(160, 177, 203,1); width: 100%; height: 100vh;"
+      )
+    })
+  })
+  
+  }
 
 shinyApp(ui = ui, server = server)
