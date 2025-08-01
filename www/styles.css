@@ -34,17 +34,23 @@ p {
 .logo {
   position: absolute;
   top: 10px;
-  right: 20px;
-  width: 300px;  /* Adjust width as needed */
+  right: 100px;
+  width: 300px;  
   height: auto;
 }
+
+   @media (max-width: 768px) {
+      .logo {
+        width: 80px; /* Smaller size for mobile */
+      }
+    }
 
 /* General Container */
 .container {
   position: relative;
   width: 100%;
   height: 100vh;
-  background-image: url('MongolOase-JNoack-110-1200x750.jpg');
+  background-image: url('Background_pictures_and_logos/MongolOase-JNoack-110-1200x750.jpg');
   background-size: cover;
   background-position: center;
   display: flex;
@@ -85,4 +91,81 @@ p {
 .content {
   padding: 20px;
 }
+
+
+/* Navigation bar logo positioning */
+.navbar-logo {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  max-width: 120px;
+  height: auto;
+  z-index: 1000;
+}
+
+/* Adjust size on smaller screens */
+@media (max-width: 768px) {
+  .navbar-logo {
+    max-width: 80px;
+    right: 10px;
+    top: 5px;
+  }
+}
+
+/* Reduce navbar text and padding on small screens */
+@media (max-width: 768px) {
+  .navbar-nav {
+    font-size: 14px; /* Smaller text in navbar */
+  }
+  .navbar-brand {
+    font-size: 16px; /* Reduce app title size */
+  }
+  .container-fluid {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+/* Scale down headings and paragraph text */
+@media (max-width: 768px) {
+  h1, h2, h3 {
+    font-size: 18px !important; /* Smaller heading size */
+  }
+  p {
+    font-size: 14px !important; /* Smaller paragraph text */
+  }
+}
+
+/* Make images responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure navbar collapses properly */
+.navbar-collapse {
+  max-height: 400px; /* Prevents full-screen expansion */
+  overflow-y: auto;
+}
+
+/* Adjust margins to prevent unnecessary white space */
+@media (max-width: 768px) {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+/* Reduce padding/margin in rows */
+@media (max-width: 768px) {
+  .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 
