@@ -7,10 +7,11 @@ library(openalexR)
 # Set update flags to FALSE to prevent unnecessary reloading of data
 seed_knowledge_update <- FALSE
 expanded_knowledge_update <- FALSE
+GOKH_version="0.0" 
 
 # Define the file path where the metadata of seed references should be stored
-fn <- file.path("data", "seed_knowledge_works.rds")
-
+#fn <- file.path("data", "seed_knowledge_works.rds")
+fn <- file.path("data", "seed_works_TabS1.rds")
 # Check if the metadata file already exists and no updates are required
 # If the file exists and updates are not needed, load the existing file instead of fetching new data
 if (file.exists(fn) & (!seed_knowledge_update)) {
@@ -36,8 +37,8 @@ if (file.exists(fn) & (!seed_knowledge_update)) {
 # This step performs a snowball search by collecting all citations both from and to the seed references.
 
 # Define the file path where the expanded reference metadata should be stored
-fn <- file.path("data", "expanded_knowledge_works.rds")
-
+#fn <- file.path("data", "expanded_knowledge_works.rds")
+fn <- file.path("data", "expanded_works_with_lat_long_TabS1.rds")
 # If the expanded reference file exists, load the saved data; otherwise, perform the expansion search
 if (file.exists(fn) &
     (!seed_knowledge_update) & (!expanded_knowledge_update)) {
@@ -64,6 +65,18 @@ if (file.exists(fn) &
   # Save the expanded metadata for future reference
   saveRDS(expanded_works, fn)
 }
+
+nodes_df <- expanded_works$nodes
+
+global_nodes <- data.frame(
+  id = nodes_df$id,
+  title = sapply(nodes_df$Sup1_info, function(x) if (!is.null(x)) x$oasis_name else NA),
+  lat = sapply(nodes_df$Sup1_info, function(x) if (!is.null(x)) x$oasis_lat else NA),
+  lon = sapply(nodes_df$Sup1_info, function(x) if (!is.null(x)) x$oasis_long else NA),
+  stringsAsFactors = FALSE
+)
+
+global_nodes <- global_nodes[!is.na(global_nodes$lat),]
 
 col_oasis <- c(rgb(60/255, 77/255, 103/255), rgb(160/255, 177/255, 203/255), "#50521A", "#A19658","#794839", "#D1B091")
 col_water_scale <- colorRampPalette(col_oasis[2:1])
