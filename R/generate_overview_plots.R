@@ -104,32 +104,44 @@ generate_data_year_barplot <- function(nodes_df, output_path, output) {
 }
 
 generate_data_type_pie <- function(nodes_df, output_path, output) {
- 
-   if (!file.exists(output_path)) {
-    table_type <- as.data.frame(table(nodes_df$Type))
-    colors <- col_diverging_scale(18)
-    table_type$colors <- colors[1:nrow(table_type)]
-    total_count <- sum(table_type$Freq)
-    
-    saveRDS(list(
+  
+  types <- nodes_df$Type
+  types <- types[!is.na(types) & types != ""]
+  
+  table_type <- as.data.frame(table(types), stringsAsFactors = FALSE)
+  colnames(table_type) <- c("Var1", "Freq")
+  
+  colors <- col_diverging_scale(18)
+  table_type$colors <- colors[seq_len(nrow(table_type))]
+  
+  total_entries <- sum(table_type$Freq)
+  distinct_count <- nrow(table_type)
+  
+  saveRDS(
+    list(
       pie_data = table_type,
-      total_count = total_count
-    ), output_path)
-  }
+      total_entries = total_entries,
+      distinct_count = distinct_count
+    ),
+    output_path
+  )
   
   data_type_data <- readRDS(output_path)
   
   output$data_type_pie <- renderPlotly({
     pie_data <- data_type_data$pie_data
-    total_count <- data_type_data$total_count
+    total_entries <- data_type_data$total_entries
+    distinct_count <- data_type_data$distinct_count
     
     plot_ly(
       pie_data,
-      labels = ~paste0(Var1, ": ",Freq, " (", round(Freq / total_count * 100,1), "%)"),
+      labels = ~paste0(
+        Var1, ": ", Freq, " (", round(Freq / total_entries * 100, 1), "%)"
+      ),
       values = ~Freq,
-      type = 'pie',
-      textinfo = 'none',
-      hoverinfo = 'label+values',
+      type = "pie",
+      textinfo = "none",
+      hoverinfo = "label+values",
       hole = 0.4,
       height = 400,
       marker = list(
@@ -137,7 +149,7 @@ generate_data_type_pie <- function(nodes_df, output_path, output) {
         line = list(color = "black", width = 1.5)
       ),
       customdata = ~Var1,
-      source = "data_type_pie"  # 👈 for plotly_click tracking
+      source = "data_type_pie"
     ) %>%
       layout(
         showlegend = TRUE,
@@ -151,7 +163,7 @@ generate_data_type_pie <- function(nodes_df, output_path, output) {
           font = list(size = 14)
         ),
         annotations = list(
-          text = paste(total_count, "Data Types", sep = "\n"),
+          text = paste0(distinct_count, "\nData types"),
           x = 0.5, y = 0.5,
           font = list(size = 22),
           showarrow = FALSE
@@ -160,6 +172,7 @@ generate_data_type_pie <- function(nodes_df, output_path, output) {
       event_register("plotly_click")
   })
 }
+
 
 generate_source_tree <- function(nodes_df, output_path, output) {
   if (!file.exists(output_path)) {
