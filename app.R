@@ -12,6 +12,15 @@ library(wordcloud2)
 library(leaflet)
 library(visNetwork)
 library(scales)
+library(future)
+library(promises)
+library(htmltools)
+
+# definde multisession for processing big data in background job while website is already runnning 
+plan(multisession)
+
+source("R/load_data_from_zenodo.R")
+source("R/generate_overview_plots.R")
 
 
 # Start of User Interface ------------------------------------------------------
@@ -220,7 +229,7 @@ ui <- fluidPage(
     tabPanel("About", #Page provides information about the general structure and involved coordinators
               
             value = "about",
-            tags$img(src = "Backround_pictures_and_logos/SNG_Logo_transperant.png", class = "logo",  style="z-index: 1000; margin-top: 100px;margin-right: 50px;display: flex; "),
+           # tags$img(src = "Backround_pictures_and_logos/SNG_Logo_transperant.png", class = "logo",  style="z-index: 1000; margin-top: 100px;margin-right: 50px;display: flex; "),
             div(style = "max-width: 1100px; margin: auto; padding: 20px;",
                
               #First row: General information about the Global Oasis Knowledge Hub  
@@ -330,32 +339,86 @@ ui <- fluidPage(
 # Start of Server functionalities ----------------------------------------------
 server <- function(input, output, session) {
   
+  # Load Data in the background  ----------------------------------------------------------------------------------------------------------
+
+  
+  vals <- reactiveValues(
+    nodes_df = NULL,
+    edges_df = NULL,
+    seedworks = NULL,
+    global_nodes = NULL,
+    status = "not_started"
+  )
+  
+  session$onFlushed(function() {
+    vals$status <- "loading"
+    
+    future({
+      load_zenodo_data(CACHE_DIR)   # must return list(nodes_df=..., edges_df=..., seedworks=...)
+    }) %...>% (function(res) {
+      vals$nodes_df  <- res$nodes_df
+      vals$edges_df  <- res$edges_df
+      vals$seedworks <- res$seedworks
+      vals$global_nodes <- res$global_nodes
+      vals$status <- "ready"
+    }) %...!% (function(e) {
+      vals$status <- paste("error:", e$message)
+    })
+    
+  }, once = TRUE)
+
+  
+  output$home_status <- renderUI({
+    if (vals$status == "loading") div("Loading data in background...")
+    else if (vals$status == "ready") div("Ready.")
+    else if (startsWith(vals$status, "error:")) div(style = "color:red;", vals$status)
+    else NULL
+  })
+  
+  #reactive aliases
+  get_ready <- function(x) { req(vals$status == "ready"); x }
+
+nodes_df_r     <- reactive(get_ready(vals$nodes_df))
+edges_df_r     <- reactive(get_ready(vals$edges_df))
+seedworks_r    <- reactive(get_ready(vals$seedworks))
+global_nodes_r <- reactive(get_ready(vals$global_nodes))
+  
+  
   # Start Statistics for Overview  ----------------------------------------------------------------------------------------------------------
   
-  source("R/generate_overview_plots.R")
+  overview_started <- reactiveVal(FALSE)
+  
+  observe({
+    req(vals$status == "ready")
+    req(!overview_started())
+    
   
   # --- OPEN ACCESS PIEPLOT -------------------------------------------------------
   data_open_access_path <- file.path("www/Overview_figures",
                                       paste0("open_access_pie_v", GOKH_version, ".rds"))
-  generate_open_access_pie(expanded_works, data_open_access_path, output)
+  generate_open_access_pie(nodes_df_r(), data_open_access_path, output)
 
   # --- DATA YEAR BARPLOT ---------------------------------------------------------
   data_year_barplot_path <- file.path("www/Overview_figures",
                                       paste0("data_year_barplot_v", GOKH_version, ".rds"))
-  generate_data_year_barplot(expanded_works, data_year_barplot_path, output)
+  generate_data_year_barplot(nodes_df_r(), data_year_barplot_path, output)
   
   
   # --- DATA TYPE PIE -------------------------------------------------------------
   data_type_pie_path <- file.path("www/Overview_figures",
                                   paste0("data_type_pie_v", GOKH_version, ".rds"))
-  generate_data_type_pie(expanded_works, data_type_pie_path, output)
+  generate_data_type_pie(nodes_df_r(), data_type_pie_path, output)
   
   
   # --- SOURCE TREEMAP -----------------------------------------------------------
   treemap_sources_path <- file.path("www/Overview_figures",
                                      paste0("treemap_sources_path_v", GOKH_version, ".rds"))
   
-  generate_source_tree(expanded_works, treemap_sources_path , output)
+  generate_source_tree(nodes_df_r(), treemap_sources_path , output)
+  
+  
+  overview_started(TRUE)
+  })
  
   # End Statistics for Overview  -----------------------------------------------------------------------------------------------------------
   
@@ -363,14 +426,17 @@ server <- function(input, output, session) {
   
   #1. Prepare full data table 
   key_data_df <- reactive({
+    
+    nd <- nodes_df_r()
+    
     data.frame(
-      oa_ID = expanded_works$nodes$id,  
-      #Authors = expanded_works$nodes$authors_short,
-      Year = expanded_works$nodes$publication_year,
-      Title = expanded_works$nodes$title,
-      Type = expanded_works$nodes$type,
-      Open_access = expanded_works$nodes$is_oa,
-      Source = paste0('<a href="', expanded_works$nodes$landing_page_url, '" target="_blank">', expanded_works$nodes$source_display_name, '</a>'),
+      oa_ID = nd$oa_ID,  
+      Authors = nd$Authors,
+      Year = nd$Year,
+      Title = nd$Title,
+      Type = nd$Type,
+      Open_access = nd$Open_access,
+      Source = paste0('<a href="', nd$URL, '" target="_blank">', nd$Source, '</a>'),
       stringsAsFactors = FALSE
     )
   })
@@ -426,11 +492,6 @@ server <- function(input, output, session) {
   
   #2.1 additional filters from figures 
   
-  
-  # observeEvent(event_data("plotly_click", source = "open_access_pie"), {
-  #   click_data <- event_data("plotly_click", source = "open_access_pie")
-  #   print(click_data)  # Check what's coming through
-  # }) 
   observeEvent(event_data("plotly_click", source = "open_access_pie"), {
     click_data <- event_data("plotly_click", source = "open_access_pie")
     
@@ -562,190 +623,6 @@ server <- function(input, output, session) {
   
 # Visualization ----------------------------------------------------
   
-  # # Function to generate filtered visualization
-  # plot_snowball_interactive <- function(expanded_works, key_works, filtered_ids, 
-  #                                       file_graph = "www/filtered_snowball.html", 
-  #                                       file_legend = "www/legend.html") {
-  #   
-  #   ## Simple forceNetwork
-  #   networkData <- data.frame(
-  #     src = expanded_works$edges$from,
-  #     target = expanded_works$edges$to,
-  #     stringsAsFactors = FALSE
-  #   )
-  #   
-  #   nodes <- data.frame(
-  #     name = expanded_works$nodes$id,
-  #     author = IPBES.R::abbreviate_authors(expanded_works$nodes),
-  #     doi = expanded_works$nodes$doi,
-  #     nodesize = expanded_works$nodes$cited_by_count / (2024 - expanded_works$nodes$publication_year) * 0.5,
-  #     group = sapply(expanded_works$nodes$topics, function(x) {
-  #       if ("display_name" %in% colnames(x)) {
-  #         return(x$display_name[4])
-  #       } else {
-  #         return(NA)
-  #       }
-  #     }),
-  #     stringsAsFactors = FALSE
-  #   )
-  #   
-  #   # Ensure group column is valid
-  #   nodes$group[is.na(nodes$group) | nodes$group == ""] <- "Unknown"
-  #   
-  #   nodes <- nodes[nodes$name %in% filtered_ids, ]
-  #   
-  #   # If filtered result is empty, generate an **empty** HTML and stop processing
-  #   if (nrow(nodes) == 0) {
-  #     writeLines("<html><body></body></html>", file_graph)  # Create an empty page
-  #     return(list(graph = file_graph, legend = file_legend))
-  #   }
-  #   
-  #   nodes$id <- seq_len(nrow(nodes)) - 1  
-  #   
-  #   edges <- networkData %>%
-  #     filter(src %in% nodes$name & target %in% nodes$name) %>%
-  #     left_join(nodes, by = c("src" = "name")) %>%
-  #     select(-src, -author) %>%
-  #     rename(source = id) %>%
-  #     left_join(nodes, by = c("target" = "name")) %>%
-  #     select(-target, -author) %>%
-  #     rename(target = id) %>%
-  #     mutate(width = 1)
-  #   
-  #   if (nrow(edges) == 0) {
-  #     # Create a dummy row with self-loop (won't be displayed)
-  #     edges <- data.frame(source = 0, target = 0, width = 0)
-  #   }
-  #   
-  #   
-  #   # if (nrow(edges) == 0) {
-  #   #   writeLines("<html><body></body></html>", file_graph)
-  #   #   return(list(graph = file_graph, legend = file_legend))
-  #   # }
-  #   
-  #   nodes$oa_id <- nodes$name
-  #   nodes$name <- nodes$author
-  #   
-  #   # Unique groups for coloring
-  #   unique_groups <- unique(nodes$group)
-  #   
-  #   color_palette <- c("#377eb8","#50521A","#794839", "#6a3d9a", "#e31a1c" ,"#333")[1:length(unique_groups)] 
-  #   
-  #   # color_palette <- c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3",
-  #   #                    "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd",
-  #   #                    "#ccebc5", "#ffed6f")[1:length(unique_groups)]
-  #   # 
-  #   ColourScale <- sprintf(
-  #     'd3.scaleOrdinal().domain(["%s"]).range(["%s"]);',
-  #     paste(unique_groups, collapse = '", "'),
-  #     paste(color_palette, collapse = '", "')
-  #   )
-  #   
-  #   openDOI <- "window.open(d.doi)"
-  #   
-  #   
-  #   nwg <- forceNetwork(
-  #     Links = edges,
-  #     Nodes = nodes,
-  #     Source = "source",
-  #     Target = "target",
-  #     NodeID = "name",
-  #     Group = "group",
-  #     Value = "width",
-  #     opacity = 1,
-  #     zoom = TRUE,
-  #     colourScale = JS(ColourScale),
-  #     fontSize = 20,
-  #     legend = FALSE,
-  #     clickAction = openDOI
-  #   )
-  #   
-  #   
-  #   nwg$x$nodes$doi <- nodes$doi
-  #   
-  #   # Save the graph as an HTML file
-  #   networkD3::saveNetwork(nwg, file = file_graph, selfcontained = TRUE)
-  #   
-  #   # Generate legend HTML
-  #   legend_html <- "<html><body><h3>Scientific Field</h3><ul style='list-style: none;'>"
-  #   
-  #   for (i in seq_along(unique_groups)) {
-  #     legend_html <- paste0(
-  #       legend_html,
-  #       "<li style='margin:5px;'><span style='display:inline-block;width:15px;height:15px;background-color:",
-  #       color_palette[i], ";border: 1px solid black;'></span> ",
-  #       unique_groups[i], "</li>"
-  #     )
-  #   }
-  #   
-  #   legend_html <- paste0(legend_html, "</ul></body></html>")
-  #   
-  #   writeLines(legend_html, file_legend)
-  #   
-  #   # Return file paths
-  #   list(graph = file_graph, legend = file_legend)
-  # } 
-  # 
-  # 
-  # # Reactive flag to track whether filtered visualization should be displayed
-  # show_filtered <- reactiveVal(FALSE)
-  # 
-  # # Default: Show the full snowball visualization
-  # output$visualization_ui <- renderUI({
-  #   if (show_filtered()) {
-  #     tags$iframe(
-  #       src = "filtered_snowball.html",
-  #       style = "border: 5px solid #333; width: 100%; height: 100vh;"
-  #     )
-  #   } else {
-  #     tags$iframe(
-  #       src = "snowball_full.html",
-  #       style = "border: 5px solid rgba(160, 177, 203,1); width: 100%; height: 100vh;"
-  #     )
-  #   }
-  # })
-  # 
-  # # When "Visualize" is clicked, generate filtered visualization and update flag
-  # observeEvent(input$go_visualize, {
-  #   updateTabsetPanel(session, "main_tabs", selected = "Visualization")
-  #   
-  #   # Extract filtered node IDs safely 🔧
-  #   filtered_ids <- if (!is.null(filtered_data()) && nrow(filtered_data()) > 0) {
-  #     filtered_data()$id
-  #   } else {
-  #     NULL
-  #   }
-  #   
-  #   if (!is.null(filtered_ids)) {
-  #     plot_snowball_interactive(expanded_works, key_works, filtered_ids)
-  #     
-  #     # Update reactive flag to show the filtered visualization
-  #     show_filtered(TRUE)
-  #     
-  #     # *Explicitly trigger UI re-render**
-  #     output$visualization_ui <- renderUI({
-  #       tags$iframe(
-  #         src = "filtered_snowball.html",
-  #         style = "border: 5px solid #333; width: 100%; height: 100vh;"
-  #       )
-  #     })
-  #   } 
-  # })
-  # 
-  # # When "Reset Visualization" is clicked, switch back to the full snowball visualization
-  # observeEvent(input$reset_visualize, {
-  #   show_filtered(FALSE)  # Reset to show full visualization
-  #   
-  #   # ✅ **Explicitly trigger UI re-render to show full visualization**
-  #   output$visualization_ui <- renderUI({
-  #     tags$iframe(
-  #       src = "snowball_full.html",
-  #       style = "border: 5px solid rgba(160, 177, 203,1); width: 100%; height: 100vh;"
-  #     )
-  #   })
-  # })
-  
-  
   subnet_trigger <- reactiveVal(NULL)
   subnet_displayed <- reactiveVal(FALSE)
   
@@ -766,13 +643,13 @@ server <- function(input, output, session) {
   })
   
   output$map <- renderLeaflet({
-    leaflet(global_nodes) %>%
+    leaflet(global_nodes_r()) %>%
       addProviderTiles("CartoDB.Positron") %>%
       addMarkers(
-        lng = ~lon,
+        lng = ~long,
         lat = ~lat,
-        label = ~title,
-        layerId = ~id,
+        label = ~Title,
+        layerId = ~oa_ID,
         clusterOptions = markerClusterOptions()
       )
   })
@@ -806,88 +683,154 @@ server <- function(input, output, session) {
    output$subnetwork <- renderVisNetwork({
     req(subnet_trigger())
     
+     ed <- edges_df_r()
+     nd <- nodes_df_r()
+     
     center_id <- subnet_trigger()
-    nodes_df <- expanded_works$nodes
-    edges_df <- expanded_works$edges
+
     
-    sub_edges <- edges_df %>% filter(from == center_id | to == center_id)
+    sub_edges <- ed %>% filter(from == center_id | to == center_id)
     if (nrow(sub_edges) == 0) return(NULL)
     
     outgoing_ids <- sub_edges$to[sub_edges$from == center_id]
     incoming_ids <- sub_edges$from[sub_edges$to == center_id]
     connected_ids <- unique(c(sub_edges$from, sub_edges$to))
-    sub_nodes <- nodes_df %>% filter(id %in% connected_ids)
+    sub_nodes <- nd %>% filter(oa_ID %in% connected_ids)
     
     sub_nodes$group <- ifelse(
-      sub_nodes$id == center_id, "Reviewed",
-      ifelse(sub_nodes$id %in% outgoing_ids, "Cited", "New citing ")
+      sub_nodes$oa_ID == center_id, "Reviewed",
+      ifelse(sub_nodes$oa_ID %in% outgoing_ids, "Cited", "New citing ")
     )
     
     sub_nodes$internal_id <- 1:nrow(sub_nodes)
-    id_map <- setNames(sub_nodes$internal_id, sub_nodes$id)
+    id_map <- setNames(sub_nodes$internal_id, sub_nodes$oa_ID)
     
     # Fix X and Y positions
     
-    sub_nodes$x <- rescale(sub_nodes$publication_year, to = c(-400, 400))
+    sub_nodes$x <- rescale(sub_nodes$Year, to = c(-400, 400))
     
     sub_nodes$y <- ifelse(
-      sub_nodes$id %in% outgoing_ids,
+      sub_nodes$oa_ID %in% outgoing_ids,
       seq(-200, 200, length.out = length(outgoing_ids)),
       ifelse(
-        sub_nodes$id %in% incoming_ids,
+        sub_nodes$oa_ID %in% incoming_ids,
         seq(-200, 200, length.out = length(incoming_ids)),
         0
       )
     )
     
-    sub_nodes$group <- ifelse(
-      sub_nodes$id == center_id, "Reviewed",
-      ifelse(sub_nodes$id %in% outgoing_ids, "Cited", "New citing ")
-    )
-    # sub_nodes$node_color <- ifelse(
-    #   sub_nodes$id == center_id, "#0072B2",  # center = dark blue
-    #   ifelse(sub_nodes$id %in% incoming_ids, "#56B4E9", "#E69F00")  # citing = blue, cited = orange
-    # )
+
+    
+    wrap_title <- function(txt, width = 60) {
+      # inserts <br> every ~width characters at spaces
+      paste(strwrap(txt, width = width), collapse = "<br>")
+    }
     
     vis_nodes <- data.frame(
-      id = sub_nodes$internal_id,
+      id    = sub_nodes$internal_id,
       group = sub_nodes$group,
-      title = paste(sub_nodes$title, "(", sub_nodes$publication_year, ")", sep=""),
-      url = sub_nodes$landing_page_url,
+      title = sprintf(
+        "<div style='max-width:320px; white-space:normal; overflow-wrap:anywhere; line-height:1.2;'>%s</div>",
+        vapply(paste0(sub_nodes$Title, " (", sub_nodes$Year, ")"), wrap_title, character(1))
+      ),
+      url   = sub_nodes$URL,
       label = "",
-      x = sub_nodes$x,
-      y = sub_nodes$y,
+      x     = sub_nodes$x,
+      y     = sub_nodes$y,
       fixed = TRUE
     )
     
-    
+
     sub_edges$direction <- ifelse(sub_edges$from == center_id, "outgoing", "incoming")
     vis_edges <- data.frame(
       from = id_map[sub_edges$from],
       to = id_map[sub_edges$to],
-      color = ifelse(sub_edges$direction == "outgoing", "#E69F00", "#56B4E9"),
+      color = ifelse(sub_edges$direction == "outgoing", "#56B4E9", "#E69F00"),
       arrows = "from"
     )
     
+    minYear <- min(sub_nodes$Year, na.rm = TRUE)
+    maxYear <- max(sub_nodes$Year, na.rm = TRUE)
+    
     visNetwork(vis_nodes, vis_edges, height = "600px", width = "100%") %>%
+      visNodes(size = 7, scaling = list(min = 0, max = 7)) %>%
       visGroups(groupname = "Reviewed", color = "#0072B2", shape = "dot") %>%
-      visGroups(groupname = "Cited", color = "#E69F00", shape = "dot") %>%
-      visGroups(groupname = "New citing ", color = "#56B4E9", shape = "dot") %>%
-      visOptions(highlightNearest = TRUE) %>%
+      visGroups(groupname = "Cited", color = "#56B4E9", shape = "dot") %>%
+      visGroups(groupname = "New citing ", color = "#E69F00", shape = "dot") %>%
+      visOptions(highlightNearest = FALSE) %>%
       visPhysics(enabled = FALSE) %>%
       visInteraction(navigationButtons = TRUE) %>%
-      visLegend(useGroups = TRUE, position = "left", main = "Legend") %>%
+      visLegend(useGroups = TRUE, position = "right", main = "") %>%
       visEvents(
-        selectNode = JS(
-          "function(nodes) {
-         if (nodes.nodes.length > 0) {
-           var node = this.body.data.nodes.get(nodes.nodes[0]);
-           if (node.title) {
-             window.open(node.url, '_blank');
-           }
-         }
-       }"
-        )
+        selectNode = JS("
+      function(nodes) {
+        if (nodes.nodes.length > 0) {
+          var node = this.body.data.nodes.get(nodes.nodes[0]);
+          if (node && node.url) window.open(node.url, '_blank');
+        }
+      }
+    "),
+        afterDrawing = JS(sprintf("
+  function(ctx) {
+    var ns = this.body.data.nodes.get();
+    if (!ns || ns.length === 0) return;
+
+    // use visible node cloud in pixel space for left/right
+    var dom = [];
+    for (var i = 0; i < ns.length; i++) {
+      var n = ns[i];
+      if (n.x == null || n.y == null) continue;
+      if (isNaN(n.x) || isNaN(n.y)) continue;
+      dom.push(this.canvasToDOM({x: n.x, y: n.y}));
+    }
+    if (dom.length === 0) return;
+
+    var left = dom[0].x, right = dom[0].x;
+    for (var j = 1; j < dom.length; j++) {
+      if (dom[j].x < left) left = dom[j].x;
+      if (dom[j].x > right) right = dom[j].x;
+    }
+
+    // top axis position
+    var y = -250;        // move down/up if needed
+    left -= 450;
+    right -= 400;
+    if (right <= left) return;
+
+    var minYear = %d;
+    var maxYear = %d;
+
+    var ticks = 8;
+
+    ctx.save();
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = '#9E9E9E'; // axis line + ticks
+    ctx.fillStyle   = '#9E9E9E'; // labels
+
+    // axis line
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.stroke();
+
+    // ticks + labels
+    for (var k = 0; k < ticks; k++) {
+      var t = (ticks === 1) ? 0 : k / (ticks - 1);
+      var x = left + (right - left) * t;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + 6);
+      ctx.stroke();
+
+      var yr = Math.round(minYear + (maxYear - minYear) * t);
+      ctx.fillText(String(yr), x, y - 10);
+    }
+
+    ctx.restore();
+  }
+", minYear, maxYear))
       )
     
     

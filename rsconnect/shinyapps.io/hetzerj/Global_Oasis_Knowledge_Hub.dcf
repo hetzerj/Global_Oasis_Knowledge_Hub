@@ -5,8 +5,9 @@ account: hetzerj
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13925136
-bundleId: 10711437
+bundleId: 11500508
 url: https://hetzerj.shinyapps.io/Global_Oasis_Knowledge_Hub/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: .RData|input/oasis_seed_references.csv
