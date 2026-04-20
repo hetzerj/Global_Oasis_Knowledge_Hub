@@ -9,7 +9,7 @@ get_zenodo_data <- function(doi, cache_dir) {
     download_zenodo(
       doi = doi,
       path = cache_dir,
-      files = list(),     # or list("yourfile.rds") if you want to be strict
+      files = list(),     
       logger = "INFO",
       quiet = FALSE, 
       timeout=600
@@ -25,7 +25,7 @@ load_zenodo_data <- function(CACHE_DIR) {
   
 dir.create(CACHE_DIR, showWarnings = FALSE, recursive = TRUE)
 
-ZENODO_DOI <- "10.5281/zenodo.18327184"   # your DOI or concept DOI
+ZENODO_DOI <- "10.5281/zenodo.18327184"   
 
 get_zenodo_data(ZENODO_DOI, CACHE_DIR) 
 
