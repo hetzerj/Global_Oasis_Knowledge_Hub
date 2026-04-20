@@ -2,8 +2,6 @@ library(ggplot2)
 library(plotly)
 
 
-# Script for generating plots for the Overview  tab panel-----------------------------------------------------------------------------------
-
 generate_open_access_pie <- function(nodes_df, output_path, output) {
   if (!file.exists(output_path)) {
     table_open_access <- table(nodes_df$Open_access)
@@ -12,8 +10,6 @@ generate_open_access_pie <- function(nodes_df, output_path, output) {
       value = as.numeric(table_open_access)
     )
     total_count <- sum(pie_data$value)
-    
-    # Save just the data
     saveRDS(list(pie_data = pie_data, total_count = total_count), output_path)
   }
   
@@ -54,8 +50,6 @@ generate_open_access_pie <- function(nodes_df, output_path, output) {
       ) %>%
       event_register("plotly_click")
   })
-  
-  #return(output$open_access_pie)
 }
 
 generate_data_year_barplot <- function(nodes_df, output_path, output) {
@@ -179,8 +173,7 @@ generate_source_tree <- function(nodes_df, output_path, output) {
     table_journals <- as.data.frame(table(nodes_df$Source))
     sorted_journals <- table_journals[order(-table_journals$Freq), ]
     top_journals <- head(sorted_journals, 100)  # Top 100 sources
-    colnames(top_journals) <- c("source", "count")  # 👈 important: use `source` as column name
-
+    colnames(top_journals) <- c("source", "count")  
     top_journals$label <- paste0(top_journals$source)
 
     saveRDS(list(
@@ -214,65 +207,15 @@ generate_source_tree <- function(nodes_df, output_path, output) {
 
 }
 
-
-
-# #Fourth row, global map of author affiliations
-# generate_global_map_institute <- function(nodes_df, output_path) {
-#   
-#   all_country_codes <- unlist(
-#     lapply(nodes$authorships, function(authorship) {
-#       if (is.list(authorship) && !is.null(authorship$affiliations)) {
-#         lapply(authorship$affiliations, function(aff) {
-#           if (!is.null(aff$country_code)) aff$country_code else NA_character_
-#         })
-#       } else {
-#         NA_character_
-#       }
-#     })
-#   )
-#   
-#   all_country_codes <- all_country_codes[!is.na(all_country_codes)]
-#   country_data <- as.data.frame(table(all_country_codes))
-#   colnames(country_data) <- c("iso_a2_eh", "count")
-#   
-#   world_map <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-#   merged_data <- dplyr::left_join(world_map, country_data, by = "iso_a2_eh")
-#   
-#   country_plot <- ggplot2::ggplot() +
-#     ggplot2::geom_sf(data = merged_data,
-#                      aes(fill = count, text = paste(iso_a2_eh, ":", count)),
-#                      color = "#333", size = 0.1, na.rm = TRUE) +
-#     ggplot2::scale_fill_gradientn(colors = col_oasis[2:1], na.value = "gray", name = "Count") +
-#     ggplot2::coord_sf(crs = "+proj=eqearth") +
-#     ggplot2::theme_minimal() +
-#     ggplot2::theme(
-#       panel.background = ggplot2::element_rect(fill = "transparent", color = NA),
-#       plot.background = ggplot2::element_rect(fill = "transparent", color = NA),
-#       panel.grid.minor = ggplot2::element_line(color = "#333", size = 0.3),
-#       plot.margin = ggplot2::margin(-20, 0, 0, 0)
-#     )
-#   
-#   plotly_obj <- plotly::ggplotly(country_plot, tooltip = "text") %>%
-#     plotly::layout(
-#       autosize = TRUE,
-#       margin = list(t = 0, l = 0, r = 0, b = 0)
-#     )
-#   
-#   saveRDS(plotly_obj, output_path)
-# }
-# Fifth row, bar plot displaying 30 most abundant sources and their frequency
-
 generate_treemap_journals <- function(nodes_df, output_path) {
-  # Count journals
+
   table_journals <- as.data.frame(table(nodes_df$Source))
   sorted_journals <- table_journals[order(-table_journals$Freq), ]
   top_journals <- head(sorted_journals, 100)
   colnames(top_journals) <- c("Journal", "Count")
   
-  # Create PNG file
   png(output_path, width = 1000, height = 500, bg = "transparent")
   
-  # Generate treemap
   treemap(
     top_journals,
     index = "Journal",
@@ -289,24 +232,3 @@ generate_treemap_journals <- function(nodes_df, output_path) {
   
   dev.off()
 }
-
-# generate_wordcloud_topics <- function(expanded_works, output_path) {
-#     all_topics <- unlist(
-#     lapply(expanded_works$nodes$topics, function(topic) {
-#       if (!is.null(topic$display_name)) topic$display_name else NA_character_
-#     })
-#   )
-#   
-#   all_topics <- all_topics[!is.na(all_topics)]
-#   table_topics <- as.data.frame(table(all_topics))
-#   sorted_topics <- table_topics[order(-table_topics$Freq), ]
-#   colnames(sorted_topics) <- c("word", "freq")
-#   
-#   saveRDS(sorted_topics, output_path)
-# }
-
-
-
-
-
-# End Statistics for Overview  -----------------------------------------------------------------------------------------------------------
