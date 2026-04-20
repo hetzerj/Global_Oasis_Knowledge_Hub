@@ -41,7 +41,7 @@ p {
 
    @media (max-width: 768px) {
       .logo {
-        width: 80px; /* Smaller size for mobile */
+        width: 80px; 
       }
     }
 
