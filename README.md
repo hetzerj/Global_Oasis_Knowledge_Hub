@@ -1,14 +1,18 @@
 # Global Oasis Knowledge Hub  
 
-This is the framework for the **Global Oasis Knowledge Hub**. The initiative aims to support science and policy by effectively leveraging knowledge and resources.  
+This is the framework for the **Global Oasis Knowledge Hub**. The initiative aims to support science and policy by effectively leveraging knowledge from literature.  
 
 ## Project Structure  
 ```
 /Global_Oasis_Knowledge_Hub
 │— app.R           # Main Shiny application script
+│— R/            # Static assets (CSS, images, etc.)
+│   └— global.R  # R-Script that loads packages and sets global variables
+│   └— load_data_from_zenodo.R  # R-Script that downloads the Knowledge Hubs data which gets saved and regularly updated in Zenodo (data-pipeline in seperate Repo)
+│   └— generate_overview_plots.R  # R-Script that creates summary statistics of literature corpus 
 │— www/            # Static assets (CSS, images, etc.)
 │   └— styles.css  # Global stylesheet for UI styling
-│— data/           # (Optional) Folder for datasets if required
+│— input/          # Folder for data input
 │— README.md       # Project documentation
 ```
 
