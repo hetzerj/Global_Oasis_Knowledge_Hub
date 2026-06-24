@@ -1,22 +1,46 @@
 
-get_zenodo_data <- function(doi, cache_dir) {
+get_zenodo_data <- function(doi, cache_dir, is_sandbox = FALSE) {
   # if already downloaded in this running instance, reuse
   rds_files <- list.files(cache_dir, pattern = "\\.parquet$", full.names = TRUE)
-  if (length(rds_files) > 0) {
+  
+  required_files <- c(
+    "expanded_works_nodes.parquet",
+    "expanded_works_edges.parquet",
+    "matched_reviewed_refs.parquet"
+  )
+  
+  missing_files <- required_files[
+    !file.path(cache_dir, required_files) %in% rds_files
+  ]
+  
+  if (length(missing_files) == 0) {
     message("Using cached data: ", rds_files[1])
-  } else{
-    message("Downloading data from Zenodo: ", doi)
-    download_zenodo(
-      doi = doi,
-      path = cache_dir,
-      files = list(),     
-      logger = "INFO",
-      quiet = FALSE, 
-      timeout=600
-    )
+  } else {
+      message("Downloading data from Zenodo: ", doi)
     
-    rds_files <- list.files(cache_dir, pattern = "\\.parquet$", full.names = TRUE)
-    if (length(rds_files) == 0) stop("Download succeeded but no .rds found in cache_dir")
+      if (length(rds_files) > 0) {
+        file.remove(rds_files)
+      }
+    
+      download_zenodo(
+        doi = doi,
+        path = cache_dir,
+        files = list(),
+        sandbox = is_sandbox,
+        logger = "INFO",
+        quiet = FALSE, 
+        timeout=600
+      )
+    
+      rds_files <- list.files(cache_dir, pattern = "\\.parquet$", full.names = TRUE)
+      
+      missing_files <- required_files[
+        !file.path(cache_dir, required_files) %in% rds_files
+      ]
+      
+      if (length(missing_files) > 0){stop(
+        "Download succeeded but the following files are missing: ",
+        paste(missing_files, collapse = ", "))}
   }
 }
 
@@ -25,9 +49,9 @@ load_zenodo_data <- function(CACHE_DIR) {
   
 dir.create(CACHE_DIR, showWarnings = FALSE, recursive = TRUE)
 
-ZENODO_DOI <- "10.5281/zenodo.18327184"   
+ZENODO_DOI <- "10.5072/zenodo.498995"   
 
-get_zenodo_data(ZENODO_DOI, CACHE_DIR) 
+get_zenodo_data(ZENODO_DOI, CACHE_DIR, sandbox = TRUE) 
 
 nodes_df <- arrow::read_parquet(file.path(CACHE_DIR, "expanded_works_nodes.parquet"))
 edges_df <- arrow::read_parquet(file.path(CACHE_DIR, "expanded_works_edges.parquet"))
