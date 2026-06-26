@@ -51,7 +51,7 @@ ui <- fluidPage(
             div(class = "content",
                 #Title and subtitle 
                 h1("The Global Oasis Knowledge Hub in numbers", style="margin-left:150px"),
-                h3("Version 1.0, last update 27.04.2025", style=" margin-left:150px; color: rgba(160, 177, 203)"),
+                h3("Version 1.0, last update May 2026", style=" margin-left:150px; color: rgba(160, 177, 203)"),
                 
                 #first row, displaying the number of references and the percentage of open access
                 fluidRow(style="background-color: rgba(160, 177, 203,0.3);margin-top: 100px;",
