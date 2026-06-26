@@ -7,7 +7,7 @@ library(dplyr)
 # Set update flags to FALSE to prevent unnecessary reloading of data
 seed_knowledge_update <- FALSE
 expanded_knowledge_update <- FALSE
-GOKH_version="0.0" 
+GOKH_version=1.0
 
 # shinyapps.io: use a writable temp folder
 CACHE_DIR <- file.path(tempdir(), "zenodo_cache")

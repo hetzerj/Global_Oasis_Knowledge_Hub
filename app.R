@@ -354,7 +354,7 @@ server <- function(input, output, session) {
     vals$status <- "loading"
     
     future({
-      load_zenodo_data(CACHE_DIR)   # must return list(nodes_df=..., edges_df=..., seedworks=...)
+      load_zenodo_data(CACHE_DIR)  # must return list(nodes_df=..., edges_df=..., seedworks=...)
     }) %...>% (function(res) {
       vals$nodes_df  <- res$nodes_df
       vals$edges_df  <- res$edges_df
@@ -391,7 +391,6 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
   observe({
     req(vals$status == "ready")
     req(!overview_started())
-    
   
   # --- OPEN ACCESS PIEPLOT -------------------------------------------------------
   data_open_access_path <- file.path("www/Overview_figures",
@@ -430,7 +429,7 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
     nd <- nodes_df_r()
     
     data.frame(
-      oa_ID = nd$oa_ID,  
+      OpenAlex_ID_short = nd$OpenAlex_ID_short,  
       Authors = nd$Authors,
       Year = nd$Year,
       Title = nd$Title,
@@ -546,7 +545,7 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
     #get the full data table 
     df <- key_data_df()
     
-    # remove the oa_ID column
+    # remove the OpenAlex_ID_short column
     df_searchable <- df
     # 
     
@@ -592,13 +591,13 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
     }
     
     # Return rows from full df that match filtered search
-    df[df$oa_ID %in% df_searchable$oa_ID, ]
+    df[df$OpenAlex_ID_short %in% df_searchable$OpenAlex_ID_short, ]
   })  
  
   #4. Render final table to a DTable (easy functionalities like sorting included) 
   output$data_table <- renderDT({
     datatable(
-      filtered_data()[, !colnames(filtered_data()) %in% "oa_ID"],  
+      filtered_data()[, !colnames(filtered_data()) %in% "OpenAlex_ID_short"],  
       escape = FALSE,
       options = list(
         pageLength = 20,
@@ -649,7 +648,7 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
         lng = ~long,
         lat = ~lat,
         label = ~Title,
-        layerId = ~oa_ID,
+        layerId = ~OpenAlex_ID_short,
         clusterOptions = markerClusterOptions()
       )
   })
@@ -695,25 +694,25 @@ global_nodes_r <- reactive(get_ready(vals$global_nodes))
     outgoing_ids <- sub_edges$to[sub_edges$from == center_id]
     incoming_ids <- sub_edges$from[sub_edges$to == center_id]
     connected_ids <- unique(c(sub_edges$from, sub_edges$to))
-    sub_nodes <- nd %>% filter(oa_ID %in% connected_ids)
+    sub_nodes <- nd %>% filter(OpenAlex_ID_short %in% connected_ids)
     
     sub_nodes$group <- ifelse(
-      sub_nodes$oa_ID == center_id, "Reviewed",
-      ifelse(sub_nodes$oa_ID %in% outgoing_ids, "Cited", "New citing ")
+      sub_nodes$OpenAlex_ID_short == center_id, "Reviewed",
+      ifelse(sub_nodes$OpenAlex_ID_short %in% outgoing_ids, "Cited", "New citing ")
     )
     
     sub_nodes$internal_id <- 1:nrow(sub_nodes)
-    id_map <- setNames(sub_nodes$internal_id, sub_nodes$oa_ID)
+    id_map <- setNames(sub_nodes$internal_id, sub_nodes$OpenAlex_ID_short)
     
     # Fix X and Y positions
     
     sub_nodes$x <- rescale(sub_nodes$Year, to = c(-400, 400))
     
     sub_nodes$y <- ifelse(
-      sub_nodes$oa_ID %in% outgoing_ids,
+      sub_nodes$OpenAlex_ID_short %in% outgoing_ids,
       seq(-200, 200, length.out = length(outgoing_ids)),
       ifelse(
-        sub_nodes$oa_ID %in% incoming_ids,
+        sub_nodes$OpenAlex_ID_short %in% incoming_ids,
         seq(-200, 200, length.out = length(incoming_ids)),
         0
       )

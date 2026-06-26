@@ -80,7 +80,7 @@ generate_data_year_barplot <- function(nodes_df, output_path, output) {
       type = 'bar',
       marker = list(
         color = col_oasis[2],
-        line = list(color = "black", width = 1.2)
+        line = list(color = col_oasis[2], width = 1)
       ),
       hoverinfo = "x+y",
       source = "data_year_barplot"   
@@ -88,7 +88,7 @@ generate_data_year_barplot <- function(nodes_df, output_path, output) {
       layout(
         title = "",
         xaxis = list(title = "Year", tickangle = -45),
-        yaxis = list(title = "Number of Publications", type = "log", autorange = TRUE),
+        yaxis = list(title = "Number of references", type = "log", autorange = TRUE),
         plot_bgcolor = "rgba(0,0,0,0)",
         paper_bgcolor = "rgba(0,0,0,0)"
       ) %>%
@@ -232,3 +232,8 @@ generate_treemap_journals <- function(nodes_df, output_path) {
   
   dev.off()
 }
+
+
+
+
+
