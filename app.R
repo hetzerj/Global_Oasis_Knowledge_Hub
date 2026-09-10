@@ -286,8 +286,8 @@ ui <- fluidPage(
                                  img(src = "About_profiles/Jonathan_Jeschke.jpeg", class = "advisor-img")),
                           column(2, align="left", 
                                  p("Prof. Dr. Jonathan Jeschke", style="font-weight: bold"), 
-                                 p("Department Head of Evolutionary and Integrative Ecology, IGB Berlin"), 
-                                 p("Developer of Knowledge Maps")))),
+                                 p("Group Leader and Professor of Ecological Novelty, FU and IGB Berlin"), 
+                                 p("Expert on Global Change Ecology and Research Synthesis")))),
                column(12, style=" margin-top:50px; margin-bottom:50px;",align = "center",
                       div(style="justify-content: center;",
                           column(2, offset=2,align = "center",
@@ -300,7 +300,8 @@ ui <- fluidPage(
                                  img(src = "About_profiles/Juan_A_H_Aguero.jpeg", class = "advisor-img")),
                           column(2, align="left", 
                                  p("Dr. Juan Antonio Hernández Agüero", style="font-weight: bold"), 
-                                 p("Oasis Expert"))))
+                                 p("Oasis Expert"), 
+                                 p("Initial literature review"))))
               ),
             
             #Third row: Oasis Knowledge Hub Team 
@@ -316,7 +317,7 @@ ui <- fluidPage(
                          column(2,offset=3, align = "center",
                                 img(src = "About_profiles/Jessica_Hetzer.jpeg", class = "team-img"),
                                 p("Dr. Jessica Hetzer", style="font-weight: bold"),
-                                p("Technical ans Scientific Coordinator")),
+                                p("Technical and Scientific Coordinator")),
                          column(2, align = "center",
                                 img(src = "About_profiles/Aidin_Niamir.jpeg", class = "team-img"),
                                 p("Dr. Aidin Niamir", style="font-weight: bold"),

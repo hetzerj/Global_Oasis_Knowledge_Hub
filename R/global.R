@@ -18,7 +18,7 @@ col_oasis <- c(rgb(60/255, 77/255, 103/255), rgb(160/255, 177/255, 203/255), "#5
 col_water_scale <- colorRampPalette(col_oasis[2:1])
 col_green_scale <- colorRampPalette(col_oasis[4:3])
 col_sand_scale <- colorRampPalette(col_oasis[6:5])
-col_diverging_scale <- colorRampPalette(c(col_oasis[6],"white", col_oasis[2],"#333"))
+col_diverging_scale <- colorRampPalette(c(col_oasis[6],"white", col_oasis[2],"black"))
 col_oasis_scale <- colorRampPalette(col_oasis)
 # 
 
